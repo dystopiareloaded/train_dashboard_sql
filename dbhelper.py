@@ -1,14 +1,15 @@
+import streamlit as st
 import mysql.connector
 
 class DB:
     def __init__(self):
         try:
             self.conn = mysql.connector.connect(
-                host = "127.0.0.1",
-                user =  "root" ,
-                password = "kaustav007",
-                database = "sql_dashboard",
-                port = 3306
+                host=st.secrets["mysql"]["host"],
+                user=st.secrets["mysql"]["user"],
+                password=st.secrets["mysql"]["password"],
+                database=st.secrets["mysql"]["database"],
+                port=int(st.secrets["mysql"]["port"])
             )
             self.mycursor = self.conn.cursor()
             print("✅ Database connection successful")

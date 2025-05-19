@@ -1,34 +1,34 @@
 import streamlit as st
 import mysql.connector
+import psycopg2
 
 class DB:
     def __init__(self):
         try:
-            self.conn = mysql.connector.connect(
-                host=st.secrets["mysql"]["host"],
-                user=st.secrets["mysql"]["user"],
-                password=st.secrets["mysql"]["password"],
-                database=st.secrets["mysql"]["database"],
-                port=int(st.secrets["mysql"]["port"])
+            self.conn = psycopg2.connect(
+                host=st.secrets["supabase"]["host"],
+                user=st.secrets["supabase"]["user"],
+                password=st.secrets["supabase"]["password"],
+                dbname=st.secrets["supabase"]["dbname"],
+                port=st.secrets["supabase"]["port"]
             )
-            self.mycursor = self.conn.cursor()
-            print("✅ Database connection successful")
-
-        except:
-            print("❌ Connection failed")
+            self.cursor = self.conn.cursor()
+            print("✅ Supabase DB connected")
+        except Exception as e:
+            print("❌ Connection failed:", e)
 
     
     def fetch_station_names(self):
 
         station = []
 
-        self.mycursor.execute("""
+        self.cursor.execute("""
         SELECT DISTINCT(source) FROM train_tickets
         UNION
         SELECT DISTINCT(destination) FROM train_tickets
         """)
 
-        data = self.mycursor.fetchall()
+        data = self.cursor.fetchall()
 
         for row in data:
             station.append(row[0])
@@ -37,15 +37,15 @@ class DB:
     
     def search_tickets(self, source, destination):
 
-        self.mycursor.execute("""
+        self.cursor.execute("""
             SELECT train_id, train_name, class, days_of_operation FROM train_tickets
             WHERE source = '{}' AND destination = '{}'
         """.format(source, destination))
 
-        data = self.mycursor.fetchall()
+        data = self.cursor.fetchall()
 
         # Get column names from cursor
-        column_names = [desc[0] for desc in self.mycursor.description]
+        column_names = [desc[0] for desc in self.cursor.description]
 
         # Convert rows to list of dictionaries
         result = [dict(zip(column_names, row)) for row in data]
@@ -56,13 +56,13 @@ class DB:
         labels = []
         values = []
 
-        self.mycursor.execute("""
+        self.cursor.execute("""
 
         SELECT class, COUNT(*) FROM train_tickets
         GROUP BY class
         """)
 
-        data = self.mycursor.fetchall()
+        data = self.cursor.fetchall()
 
         for row in data:
             labels.append(row[0])
@@ -75,14 +75,14 @@ class DB:
         stations = []
         bookings = []
 
-        self.mycursor.execute("""
+        self.cursor.execute("""
         SELECT source, COUNT(*) AS Bookings
         FROM train_tickets
         GROUP BY source
         ORDER BY Bookings DESC
         """)
 
-        data = self.mycursor.fetchall()
+        data = self.cursor.fetchall()
 
         for row in data:
             stations.append(row[0])
@@ -95,13 +95,14 @@ class DB:
         dates = []
         counts = []
 
-        self.mycursor.execute("""
+        self.cursor.execute("""
         SELECT travel_date, COUNT(*) AS Bookings FROM train_tickets
         GROUP BY travel_date
         ORDER BY travel_date
         """)
 
-        data = self.mycursor.fetchall()
+        data = self.cursor.fetchall()
+        
 
         for row in data:
             dates.append(str(row[0]))
@@ -114,13 +115,13 @@ class DB:
         rev_dates = []
         rev_values = []
 
-        self.mycursor.execute("""
+        self.cursor.execute("""
         SELECT travel_date, SUM(price) as total_revenue FROM train_tickets
         GROUP BY travel_date
         ORDER BY travel_date
         """)
 
-        data = self.mycursor.fetchall()
+        data = self.cursor.fetchall()
 
         for row in data:
 
@@ -128,4 +129,6 @@ class DB:
             rev_values.append(row[1])
 
         return rev_dates, rev_values
+    
+    
 
